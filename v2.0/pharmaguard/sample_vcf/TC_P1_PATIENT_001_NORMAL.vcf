@@ -1,0 +1,7 @@
+##fileformat=VCFv4.2
+##contig=<ID=22>
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene symbol">
+##INFO=<ID=STAR,Number=1,Type=String,Description="Star allele">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TC_P1_PATIENT_001_NORMAL
+22	42128945	rs16947	C	G	.	PASS	GENE=CYP2D6;STAR=*1/*1	GT	0/0

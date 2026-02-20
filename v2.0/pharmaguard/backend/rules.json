@@ -1,0 +1,31 @@
+{
+  "CYP2D6": {
+    "*4/*4": "Poor metabolizer",
+    "*1/*1": "Normal metabolizer",
+    "*1/*2": "Normal metabolizer",
+    "*1/*4": "Intermediate metabolizer"
+  },
+  "CYP2C19": {
+    "*2/*2": "Poor metabolizer",
+    "*1/*1": "Normal metabolizer",
+    "*1/*2": "Intermediate metabolizer"
+  },
+  "CYP2C9": {
+    "*3/*3": "Poor metabolizer",
+    "*1/*1": "Normal metabolizer",
+    "*1/*3": "Intermediate metabolizer"
+  },
+  "SLCO1B1": {
+    "*5/*5": "High toxicity risk",
+    "*1/*1": "Normal",
+    "*1/*5": "Increased risk"
+  },
+  "TPMT": {
+    "*3A/*3A": "Low activity",
+    "*1/*1": "Normal activity"
+  },
+  "DPYD": {
+    "*2A/*2A": "Deficient",
+    "*1/*1": "Normal"
+  }
+}

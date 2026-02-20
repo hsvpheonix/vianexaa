@@ -1,0 +1,7 @@
+##fileformat=VCFv4.2
+##contig=<ID=16>
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene symbol">
+##INFO=<ID=STAR,Number=1,Type=String,Description="Star allele">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+16	31104895	rs4149056	T	C	.	PASS	GENE=SLCO1B1;STAR=*5/*5	GT	1/1
