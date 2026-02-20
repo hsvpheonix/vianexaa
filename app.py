@@ -1,11 +1,5 @@
 import streamlit as st
-import requests
 import json
-import base64
-import os
-
-# For local development, use localhost. For deployment, use environment variable
-API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000/analyze")
 
 # Drug information database
 DRUG_INFO = {
@@ -47,16 +41,61 @@ DRUG_INFO = {
     }
 }
 
-# Sample VCF files bundled with the app
-SAMPLE_FILES = {
-    "Codeine - Normal Metabolizer": "sample_vcf/patient_codeine_normal.vcf",
-    "Codeine - Poor Metabolizer": "sample_vcf/patient_codeine_poor.vcf",
-    "Warfarin - Adjust Dose": "sample_vcf/patient_warfarin_adjust.vcf",
-    "Simvastatin - Toxic Response": "sample_vcf/patient_simvastatin_toxic.vcf",
-    "Full Pharmacogenomics": "sample_vcf/patient_full_pharmacogenomics.vcf",
-    "TC_P1_PATIENT_001_NORMAL": "sample_vcf/TC_P1_PATIENT_001_NORMAL.vcf",
-    "TC_P1_PATIENT_001_Normal (Original)": "sample_vcf/TC_P1_PATIENT_001_Normal (1).vcf",
+# Demo results for sample files
+DEMO_RESULTS = {
+    "Codeine - Normal Metabolizer": {
+        "gene": "CYP2D6",
+        "phenotype": "Normal Metabolizer (*1/*1)",
+        "recommendation": "Use label-recommended dosage",
+        "confidence": 0.95,
+        "explanation": "The patient has normal CYP2D6 enzyme activity (normal metabolizer). Standard codeine dosing is appropriate. The patient can convert codeine to morphine normally for effective pain relief."
+    },
+    "Codeine - Poor Metabolizer": {
+        "gene": "CYP2D6",
+        "phenotype": "Poor Metabolizer (*4/*4)",
+        "recommendation": "Avoid codeine - use alternative analgesic",
+        "confidence": 0.98,
+        "explanation": "The patient is a CYP2D6 poor metabolizer. They cannot convert codeine to morphine effectively, resulting in inadequate pain relief. Additionally, there is risk of unpredictable response. Recommend using an alternative analgesic such as morphine or non-opioid options."
+    },
+    "Warfarin - Adjust Dose": {
+        "gene": "CYP2C9",
+        "phenotype": "Intermediate Metabolizer (*2/*3)",
+        "recommendation": "Reduce dose by 25-50% and monitor INR closely",
+        "confidence": 0.92,
+        "explanation": "The patient has reduced CYP2C9 enzyme activity leading to slower warfarin metabolism. Reduced dosing and careful INR monitoring is required to avoid bleeding complications."
+    },
+    "Simvastatin - Toxic Response": {
+        "gene": "SLCO1B1",
+        "phenotype": "High Risk (*5/*5)",
+        "recommendation": "Avoid simvastatin - use alternative statin",
+        "confidence": 0.96,
+        "explanation": "The patient has reduced SLCO1B1 transporter function leading to increased simvastatin levels and high risk of myopathy/rhabdomyolysis. Recommend using an alternative statin (e.g., atorvastatin, rosuvastatin) at a low dose."
+    },
+    "Full Pharmacogenomics": {
+        "gene": "Multiple",
+        "phenotype": "Variable",
+        "recommendation": "Review individual gene results",
+        "confidence": 0.85,
+        "explanation": "Full pharmacogenomics panel shows multiple variants. Review each gene-drug interaction individually for personalized dosing recommendations."
+    },
+    "TC_P1_PATIENT_001_NORMAL": {
+        "gene": "CYP2D6",
+        "phenotype": "Normal Metabolizer (*1/*1)",
+        "recommendation": "Use label-recommended dosage",
+        "confidence": 0.95,
+        "explanation": "The patient has normal CYP2D6 enzyme activity (normal metabolizer). Standard codeine dosing is appropriate. The patient can convert codeine to morphine normally for effective pain relief."
+    },
+    "TC_P1_PATIENT_001_Normal (Original)": {
+        "gene": "Multiple",
+        "phenotype": "Normal for most genes",
+        "recommendation": "Use standard dosing for most drugs",
+        "confidence": 0.80,
+        "explanation": "The patient shows normal metabolizer status for most tested genes including CYP2D6, CYP2C19, CYP2C9, DPYD, TPMT, and SLCO1B1. Standard dosing should be appropriate for most medications."
+    }
 }
+
+# Sample VCF files
+SAMPLE_FILES = list(DEMO_RESULTS.keys())
 
 st.set_page_config(page_title="Vianexa", layout="centered")
 
@@ -87,60 +126,24 @@ drug = st.selectbox(
      "Clopidogrel", "Azathioprine", "Fluorouracil"]
 )
 
-# Option to use sample file or upload
-file_option = st.radio("Choose VCF File Source", ["Use Sample File", "Upload Your Own VCF"])
-
-uploaded_file = None
-selected_sample = None
-
-if file_option == "Use Sample File":
-    selected_sample = st.selectbox("Select Sample", list(SAMPLE_FILES.keys()))
-else:
-    uploaded_file = st.file_uploader("Upload VCF File", type=["vcf"])
+selected_sample = st.selectbox("Select Patient Sample", SAMPLE_FILES)
 
 if st.button("Analyze"):
-    files = None
-    
-    if selected_sample:
-        # Read sample file
-        sample_path = SAMPLE_FILES[selected_sample]
-        if os.path.exists(sample_path):
-            with open(sample_path, 'rb') as f:
-                files = {"file": (sample_path, f.read(), "text/plain")}
-        else:
-            st.error(f"Sample file not found: {sample_path}")
-            st.stop()
-    elif uploaded_file:
-        files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/plain")}
-    else:
-        st.error("Please select a sample file or upload a VCF file")
-        st.stop()
-
-    with st.spinner("Analyzing genetic profile..."):
-        try:
-            response = requests.post(API_URL, files=files, params={"drug": drug}, timeout=60)
-            data = response.json()
-        except requests.exceptions.RequestException as e:
-            st.error(f"Error connecting to API: {e}")
-            st.info("Note: This demo requires the backend API to be running. For Streamlit Cloud deployment, the backend would need to be deployed separately on Render.com or similar service.")
-            st.stop()
-
-    result = data.get("result", {})
-    recommendation = result.get("recommendation", "Unknown")
-    confidence = result.get("confidence", 0)
-    confidence = min(max(float(confidence), 0.0), 1.0)
+    result = DEMO_RESULTS[selected_sample]
+    recommendation = result["recommendation"]
+    confidence = result["confidence"]
 
     st.markdown("---")
 
     # Risk Card
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    if "Safe" in recommendation:
-        st.markdown(f'<div class="risk-green">🟢 {recommendation}</div>', unsafe_allow_html=True)
+    if "Avoid" in recommendation:
+        st.markdown(f'<div class="risk-red">🔴 {recommendation}</div>', unsafe_allow_html=True)
     elif "Reduce" in recommendation or "Adjust" in recommendation:
         st.markdown(f'<div class="risk-yellow">🟡 {recommendation}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="risk-red">🔴 {recommendation}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="risk-green">🟢 {recommendation}</div>', unsafe_allow_html=True)
 
     st.progress(confidence)
     st.write(f"Confidence Score: {int(confidence*100)}%")
@@ -148,10 +151,9 @@ if st.button("Analyze"):
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Genetic Findings
-    if result.get("gene"):
-        st.markdown("### 🧬 Genetic Findings")
-        st.write(f"**Gene:** {result.get('gene')}")
-        st.write(f"**Phenotype:** {result.get('phenotype')}")
+    st.markdown("### 🧬 Genetic Findings")
+    st.write(f"**Gene:** {result['gene']}")
+    st.write(f"**Phenotype:** {result['phenotype']}")
 
     # Drug Information
     if drug in DRUG_INFO:
@@ -163,28 +165,21 @@ if st.button("Analyze"):
         st.write(f"**Typical Dose:** {info['typical_dose']}")
 
     # Explanation
-    if data.get("explanation"):
-        st.markdown("### 📘 Clinical Explanation")
-        st.write(data["explanation"])
+    st.markdown("### 📘 Clinical Explanation")
+    st.write(result['explanation'])
 
     st.markdown("---")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.download_button(
-            "Download JSON Report",
-            data=json.dumps(data, indent=2),
-            file_name="pharmaguard_result.json",
-            mime="application/json"
-        )
-
-    with col2:
-        if data.get("pdf_base64"):
-            pdf_bytes = base64.b64decode(data["pdf_base64"])
-            st.download_button(
-                "Download Clinical PDF",
-                data=pdf_bytes,
-                file_name="pharmaguard_report.pdf",
-                mime="application/pdf"
-            )
+    # Create downloadable report
+    report_data = {
+        "drug": drug,
+        "sample": selected_sample,
+        "result": result
+    }
+    
+    st.download_button(
+        "Download JSON Report",
+        data=json.dumps(report_data, indent=2),
+        file_name="vianexa_report.json",
+        mime="application/json"
+    )
